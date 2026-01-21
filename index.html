@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tank Temperature Logger (6 Positions)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="header">
+      <div>
+        <h1>Tank Temperature Logger</h1>
+        <p class="sub">
+          6 positions × Top/Mid/Bottom. Colors update live. Save snapshots to local log. Export CSV.
+        </p>
+      </div>
+      <div class="header-actions">
+        <button id="btnSave" class="primary">Save snapshot</button>
+        <button id="btnExport">Export CSV</button>
+        <button id="btnClear" class="danger">Clear log</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- Left: Diagram -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Tank Top View</h2>
+          <div class="segmented" role="group" aria-label="Depth selector">
+            <button class="seg-btn active" data-depth="top">Top</button>
+            <button class="seg-btn" data-depth="mid">Mid</button>
+            <button class="seg-btn" data-depth="bottom">Bottom</button>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span class="pill ok">OK</span>
+          <span class="pill out">OUT</span>
+          <span class="pill empty">Empty</span>
+        </div>
+
+        <!-- SVG diagram: rectangle tank + 6 markers -->
+        <div class="diagram">
+          <svg id="tankSvg" viewBox="0 0 600 320" aria-label="Tank diagram">
+            <!-- tank body -->
+            <rect x="60" y="40" width="480" height="240" rx="10" class="tank-rect"></rect>
+
+            <!-- mid divider line (your sketch shows a busbar-ish line) -->
+            <line x1="60" y1="160" x2="540" y2="160" class="tank-line"></line>
+
+            <!-- labels -->
+            <text x="548" y="55" class="tank-label">Anodes</text>
+            <text x="548" y="272" class="tank-label">Anodes</text>
+            <text x="548" y="165" class="tank-label">Busbar</text>
+
+            <!-- markers (positions 1-6) -->
+            <!-- 1 top-left -->
+            <g class="marker" data-pos="1">
+              <circle cx="90" cy="70" r="16" class="marker-dot"></circle>
+              <text x="90" y="76" text-anchor="middle" class="marker-text">1</text>
+            </g>
+            <!-- 2 top-right -->
+            <g class="marker" data-pos="2">
+              <circle cx="510" cy="70" r="16" class="marker-dot"></circle>
+              <text x="510" y="76" text-anchor="middle" class="marker-text">2</text>
+            </g>
+            <!-- 3 bottom-left -->
+            <g class="marker" data-pos="3">
+              <circle cx="90" cy="250" r="16" class="marker-dot"></circle>
+              <text x="90" y="256" text-anchor="middle" class="marker-text">3</text>
+            </g>
+            <!-- 4 bottom-right -->
+            <g class="marker" data-pos="4">
+              <circle cx="510" cy="250" r="16" class="marker-dot"></circle>
+              <text x="510" y="256" text-anchor="middle" class="marker-text">4</text>
+            </g>
+            <!-- 6 middle (upper half) -->
+            <g class="marker" data-pos="6">
+              <circle cx="300" cy="120" r="16" class="marker-dot"></circle>
+              <text x="300" y="126" text-anchor="middle" class="marker-text">6</text>
+            </g>
+            <!-- 5 middle (lower half) -->
+            <g class="marker" data-pos="5">
+              <circle cx="300" cy="200" r="16" class="marker-dot"></circle>
+              <text x="300" y="206" text-anchor="middle" class="marker-text">5</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="small-note">
+          Diagram colors reflect the currently selected depth (Top/Mid/Bottom).
+        </div>
+      </section>
+
+      <!-- Right: Inputs -->
+      <section class="card">
+        <div class="card-head">
+          <h2>Acceptable Ranges</h2>
+          <div class="unit">
+            <label for="unitSelect">Units</label>
+            <select id="unitSelect">
+              <option value="C">°C</option>
+              <option value="F">°F</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="ranges">
+          <div class="range-row">
+            <div class="range-title">Top</div>
+            <label>Min <input type="number" step="0.1" id="topMin" value="94.0"></label>
+            <label>Max <input type="number" step="0.1" id="topMax" value="97.0"></label>
+          </div>
+          <div class="range-row">
+            <div class="range-title">Mid</div>
+            <label>Min <input type="number" step="0.1" id="midMin" value="94.0"></label>
+            <label>Max <input type="number" step="0.1" id="midMax" value="97.0"></label>
+          </div>
+          <div class="range-row">
+            <div class="range-title">Bottom</div>
+            <label>Min <input type="number" step="0.1" id="botMin" value="94.0"></label>
+            <label>Max <input type="number" step="0.1" id="botMax" value="97.0"></label>
+          </div>
+        </div>
+
+        <h2 class="mt">Measurements</h2>
+        <div class="table-wrap">
+          <table id="tempTable">
+            <thead>
+              <tr>
+                <th>Pos</th>
+                <th>Top</th>
+                <th>Mid</th>
+                <th>Bottom</th>
+                <th>Status (worst)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="small-note">
+          Tip: Leave blanks if a probe wasn’t measured. Those count as “Empty”, not “Out”.
+        </div>
+      </section>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Saved Log</h2>
+        <div class="small-note">Stored in this browser only (localStorage).</div>
+      </div>
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Unit</th>
+              <th>Ranges</th>
+              <th>Any OUT?</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- log rows inserted by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
