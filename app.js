@@ -36,6 +36,10 @@ const els = {
   markers: Array.from(document.querySelectorAll(".marker")),
 };
 
+console.log("Initializing els object");
+console.log("depthButtons found:", els.depthButtons.length, els.depthButtons);
+console.log("markers found:", els.markers.length, els.markers);
+
 function clampNum(n) {
   if (Number.isFinite(n)) return n;
   return null;
@@ -181,17 +185,22 @@ function renderTempTable() {
 }
 
 function paintDiagramForDepth(depthKey) {
+  console.log("paintDiagramForDepth called with:", depthKey);
   const ranges = readRanges();
   const temps = readTempsFromInputs();
 
+  console.log("Updating markers for depth:", depthKey);
   for (const marker of els.markers) {
     const pos = parseInt(marker.getAttribute("data-pos"), 10);
     const val = temps[pos][depthKey];
     const st = statusForValue(val, ranges[depthKey]);
 
+    console.log(`Marker pos ${pos}: value=${val}, status=${st}`);
+
     marker.classList.remove("ok", "out", "empty");
     marker.classList.add(st);
   }
+  console.log("Diagram painting complete");
 }
 
 function evaluateAndPaint() {
@@ -200,10 +209,17 @@ function evaluateAndPaint() {
 }
 
 function setDepth(depthKey) {
+  console.log("setDepth called with:", depthKey);
   currentDepth = depthKey;
+  console.log("currentDepth updated to:", currentDepth);
+
   for (const b of els.depthButtons) {
-    b.classList.toggle("active", b.getAttribute("data-depth") === depthKey);
+    const btnDepth = b.getAttribute("data-depth");
+    const isActive = btnDepth === depthKey;
+    b.classList.toggle("active", isActive);
+    console.log(`Button for depth ${btnDepth}:`, isActive ? "active" : "inactive");
   }
+
   paintDiagramForDepth(depthKey);
 }
 
@@ -370,6 +386,9 @@ function init() {
   evaluateAndPaint();
   renderLogTable();
 
+  console.log("Setting initial depth to:", currentDepth);
+  paintDiagramForDepth(currentDepth);
+
   // Add event listeners to any existing inputs (fallback HTML)
   document.querySelectorAll("#tempTable input[type='number']").forEach(input => {
     console.log("Adding listener to existing input:", input.id);
@@ -389,8 +408,14 @@ function init() {
   });
 
   // depth toggles
+  console.log("Attaching event listeners to depth buttons");
   for (const b of els.depthButtons) {
-    b.addEventListener("click", () => setDepth(b.getAttribute("data-depth")));
+    const depth = b.getAttribute("data-depth");
+    console.log("Attaching listener to button with depth:", depth);
+    b.addEventListener("click", () => {
+      console.log("Depth button clicked:", depth);
+      setDepth(depth);
+    });
   }
 
   // save snapshot
