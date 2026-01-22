@@ -165,6 +165,10 @@ td { font-size: 13px; }
   align-items: center;
   gap: 8px;
 }
+.cell input {
+  width: 80px;
+  min-width: 60px;
+}
 .badge {
   font-size: 11px;
   padding: 4px 8px;

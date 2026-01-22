@@ -70,6 +70,11 @@ function readTempsFromInputs() {
     for (const d of DEPTHS) {
       const id = getInputId(pos, d.key);
       const el = document.getElementById(id);
+      if (!el) {
+        console.warn("Input not found:", id);
+        temps[pos][d.key] = null;
+        continue;
+      }
       const raw = el.value.trim();
       temps[pos][d.key] = raw === "" ? null : clampNum(parseFloat(raw));
     }
@@ -95,9 +100,18 @@ function renderTempTable() {
   const ranges = readRanges();
   const temps = readTempsFromInputs();
 
-  // Build rows once if empty
-  if (els.tempTableBody.children.length === 0) {
+  console.log("renderTempTable called");
+  console.log("tempTableBody:", els.tempTableBody);
+  console.log("tempTableBody.children.length:", els.tempTableBody.children.length);
+
+  // Build rows if empty or if they don't have the proper structure (cells with badges)
+  if (els.tempTableBody.children.length === 0 ||
+      !els.tempTableBody.querySelector(".cell") ||
+      !els.tempTableBody.querySelector(".badge")) {
+    console.log("Building table rows for", POSITIONS.length, "positions");
+    els.tempTableBody.innerHTML = "";
     for (const pos of POSITIONS) {
+      console.log("Creating row for position", pos);
       const tr = document.createElement("tr");
 
       const tdPos = document.createElement("td");
@@ -114,6 +128,7 @@ function renderTempTable() {
         input.step = "0.1";
         input.placeholder = "—";
         input.id = getInputId(pos, d.key);
+        console.log("Created input with id:", input.id);
         input.addEventListener("input", () => {
           evaluateAndPaint();
         });
@@ -136,7 +151,9 @@ function renderTempTable() {
       tr.appendChild(tdWorst);
 
       els.tempTableBody.appendChild(tr);
+      console.log("Appended row for position", pos);
     }
+    console.log("All rows built. Total children:", els.tempTableBody.children.length);
   }
 
   // Evaluate + update badges + worst column
@@ -148,14 +165,18 @@ function renderTempTable() {
       const st = statusForValue(val, r);
 
       const badge = document.getElementById(`b_${pos}_${d.key}`);
-      badge.className = `badge ${st}`;
-      badge.textContent = st === "ok" ? "OK" : st === "out" ? "OUT" : "Empty";
+      if (badge) {
+        badge.className = `badge ${st}`;
+        badge.textContent = st === "ok" ? "OK" : st === "out" ? "OUT" : "Empty";
+      }
 
       worst = worstStatus(worst, st);
     }
     const worstEl = document.getElementById(`worst_${pos}`);
-    worstEl.className = `row-status ${worst}`;
-    worstEl.textContent = worst === "ok" ? "OK" : worst === "out" ? "OUT" : "Empty";
+    if (worstEl) {
+      worstEl.className = `row-status ${worst}`;
+      worstEl.textContent = worst === "ok" ? "OK" : worst === "out" ? "OUT" : "Empty";
+    }
   }
 }
 
@@ -341,10 +362,21 @@ function downloadText(filename, text) {
 }
 
 function init() {
+  console.log("init called");
+  console.log("DOM loaded");
+
   // build table
   renderTempTable();
   evaluateAndPaint();
   renderLogTable();
+
+  // Add event listeners to any existing inputs (fallback HTML)
+  document.querySelectorAll("#tempTable input[type='number']").forEach(input => {
+    console.log("Adding listener to existing input:", input.id);
+    input.addEventListener("input", () => {
+      evaluateAndPaint();
+    });
+  });
 
   // listeners: ranges/unit changes
   els.unit.addEventListener("change", () => {
